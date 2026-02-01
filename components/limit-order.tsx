@@ -16,22 +16,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { ChevronDown, TrendingUp, Clock, Info, Lock, Expand } from "lucide-react"
+import { ChevronDown, TrendingUp, TrendingDown, Info, Expand, X, Check, AlertCircle } from "lucide-react"
 
 const tokens = [
-  { symbol: "BTC", name: "Bitcoin", icon: "₿", price: 65000 },
-  { symbol: "ETH", name: "Ethereum", icon: "Ξ", price: 2450 },
-  { symbol: "STRK", name: "StarkNet", icon: "◈", price: 1.25 },
-  { symbol: "CAREL", name: "ZkCarel", icon: "◐", price: 0.85 },
-  { symbol: "USDT", name: "Tether", icon: "₮", price: 1 },
+  { symbol: "BTC", name: "Bitcoin", icon: "₿", price: 65000, change: 2.4 },
+  { symbol: "ETH", name: "Ethereum", icon: "Ξ", price: 2450, change: 1.8 },
+  { symbol: "STRK", name: "StarkNet", icon: "◈", price: 1.25, change: -0.5 },
+  { symbol: "CAREL", name: "ZkCarel", icon: "◐", price: 0.85, change: 5.2 },
+  { symbol: "USDT", name: "Tether", icon: "₮", price: 1, change: 0 },
+  { symbol: "USDC", name: "USD Coin", icon: "⭕", price: 1, change: 0 },
 ]
 
 const expiryOptions = [
-  { label: "10 minutes", value: "10m" },
-  { label: "1 hour", value: "1h" },
-  { label: "1 day", value: "1d" },
-  { label: "3 days", value: "3d" },
-  { label: "7 days", value: "7d" },
+  { label: "10 menit", value: "10m" },
+  { label: "1 jam", value: "1h" },
+  { label: "1 hari", value: "1d" },
+  { label: "3 hari", value: "3d" },
+  { label: "7 hari", value: "7d" },
 ]
 
 const pricePresets = [
@@ -39,6 +40,19 @@ const pricePresets = [
   { label: "-10%", value: -10 },
   { label: "-25%", value: -25 },
   { label: "-50%", value: -50 },
+]
+
+const sellPresets = [
+  { label: "+5%", value: 5 },
+  { label: "+10%", value: 10 },
+  { label: "+25%", value: 25 },
+  { label: "+50%", value: 50 },
+]
+
+// Mock active orders
+const mockOrders = [
+  { id: 1, type: "buy", token: "BTC", amount: "0.1", price: "62000", expiry: "1d", status: "active", createdAt: "2 jam lalu" },
+  { id: 2, type: "sell", token: "ETH", amount: "2.5", price: "2600", expiry: "3d", status: "active", createdAt: "5 jam lalu" },
 ]
 
 export function LimitOrder() {
@@ -49,8 +63,12 @@ export function LimitOrder() {
   const [amount, setAmount] = React.useState("")
   const [price, setPrice] = React.useState("")
   const [expiry, setExpiry] = React.useState(expiryOptions[2].value)
-  const [receiveAddress] = React.useState("0x8f...4e2d (Your Wallet)")
   const [chartModalOpen, setChartModalOpen] = React.useState(false)
+  const [chartPeriod, setChartPeriod] = React.useState("24H")
+  const [orders, setOrders] = React.useState(mockOrders)
+  const [showConfirmDialog, setShowConfirmDialog] = React.useState(false)
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [submitSuccess, setSubmitSuccess] = React.useState(false)
 
   const handlePricePreset = (percentage: number) => {
     const marketPrice = selectedToken.price
@@ -62,41 +80,72 @@ export function LimitOrder() {
   const currentPrice = Number.parseFloat(price) || 0
   const priceChange = marketPrice ? ((currentPrice - marketPrice) / marketPrice * 100).toFixed(2) : "0"
 
+  const handleAmountPreset = (percent: number) => {
+    // Mock balance
+    const balance = orderType === "buy" ? 10000 : 5
+    setAmount((balance * percent / 100).toString())
+  }
+
+  const estimatedTotal = currentPrice * (Number.parseFloat(amount) || 0)
+
+  const handleSubmitOrder = () => {
+    setShowConfirmDialog(true)
+  }
+
+  const confirmOrder = async () => {
+    setIsSubmitting(true)
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    
+    const newOrder = {
+      id: orders.length + 1,
+      type: orderType,
+      token: selectedToken.symbol,
+      amount,
+      price,
+      expiry,
+      status: "active" as const,
+      createdAt: "Baru saja"
+    }
+    
+    setOrders([newOrder, ...orders])
+    setIsSubmitting(false)
+    setSubmitSuccess(true)
+    
+    setTimeout(() => {
+      setShowConfirmDialog(false)
+      setSubmitSuccess(false)
+      setAmount("")
+      setPrice("")
+    }, 1500)
+  }
+
+  const cancelOrder = (orderId: number) => {
+    setOrders(orders.filter(o => o.id !== orderId))
+  }
+
   return (
     <>
       <section id="limit-order" className="py-12">
         <div className="max-w-7xl mx-auto">
-          {/* Header with Coming Soon Badge */}
+          {/* Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/20 border border-secondary/30 mb-4">
-              <Lock className="h-4 w-4 text-secondary" />
-              <span className="text-sm font-medium text-secondary">Coming Soon - Testnet Mode</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 border border-primary/30 mb-4">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium text-primary">Testnet Active</span>
             </div>
             <h2 className="text-3xl font-bold text-foreground mb-2">Limit Order</h2>
-            <p className="text-muted-foreground">Set your price and execute trades automatically</p>
+            <p className="text-muted-foreground">Atur harga dan eksekusi trade secara otomatis</p>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
-            {/* Chart Section - With Full Chart Modal */}
-            <div className="lg:col-span-2 p-6 rounded-2xl glass-strong border border-border relative">
-              {/* Coming Soon Overlay */}
-              <div className="absolute inset-0 bg-background/60 backdrop-blur-sm rounded-2xl z-10 flex items-center justify-center">
-                <div className="text-center p-6">
-                  <div className="w-16 h-16 rounded-full bg-secondary/20 flex items-center justify-center mx-auto mb-4">
-                    <Lock className="h-8 w-8 text-secondary" />
-                  </div>
-                  <h3 className="text-lg font-bold text-foreground mb-2">Live Trading Coming Soon</h3>
-                  <p className="text-sm text-muted-foreground max-w-xs">
-                    Limit order functionality will be available in the mainnet release.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between mb-6 opacity-50">
+            {/* Chart Section */}
+            <div className="lg:col-span-2 p-6 rounded-2xl glass-strong border border-border">
+              <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild disabled>
-                      <Button variant="outline" className="gap-2 bg-transparent cursor-not-allowed">
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="gap-2 bg-transparent">
                         <span className="text-xl">{selectedToken.icon}</span>
                         <span className="font-bold">{selectedToken.symbol}</span>
                         <ChevronDown className="h-4 w-4" />
@@ -122,9 +171,16 @@ export function LimitOrder() {
                   
                   <div>
                     <p className="text-2xl font-bold text-foreground">${selectedToken.price.toLocaleString()}</p>
-                    <p className="text-sm text-success flex items-center gap-1">
-                      <TrendingUp className="h-3 w-3" />
-                      +2.4%
+                    <p className={cn(
+                      "text-sm flex items-center gap-1",
+                      selectedToken.change >= 0 ? "text-success" : "text-destructive"
+                    )}>
+                      {selectedToken.change >= 0 ? (
+                        <TrendingUp className="h-3 w-3" />
+                      ) : (
+                        <TrendingDown className="h-3 w-3" />
+                      )}
+                      {selectedToken.change >= 0 ? "+" : ""}{selectedToken.change}%
                     </p>
                   </div>
                 </div>
@@ -134,12 +190,12 @@ export function LimitOrder() {
                     {["1H", "24H", "7D", "30D"].map((period) => (
                       <button
                         key={period}
-                        disabled
+                        onClick={() => setChartPeriod(period)}
                         className={cn(
-                          "px-3 py-1 text-xs font-medium rounded-md cursor-not-allowed",
-                          period === "24H"
+                          "px-3 py-1 text-xs font-medium rounded-md transition-colors",
+                          chartPeriod === period
                             ? "bg-primary/20 text-primary"
-                            : "text-muted-foreground"
+                            : "text-muted-foreground hover:text-foreground hover:bg-surface"
                         )}
                       >
                         {period}
@@ -148,9 +204,7 @@ export function LimitOrder() {
                   </div>
                   <Button 
                     variant="ghost" 
-                    size="icon" 
-                    disabled
-                    className="cursor-not-allowed"
+                    size="icon"
                     onClick={() => setChartModalOpen(true)}
                   >
                     <Expand className="h-4 w-4" />
@@ -158,58 +212,94 @@ export function LimitOrder() {
                 </div>
               </div>
 
-              {/* Simplified Chart Visualization */}
-              <div className="h-64 rounded-xl bg-surface/30 relative overflow-hidden opacity-50">
+              {/* Chart Visualization */}
+              <div className="h-64 rounded-xl bg-surface/30 relative overflow-hidden">
                 <svg className="w-full h-full" viewBox="0 0 800 200" preserveAspectRatio="none">
                   <defs>
-                    <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="rgb(var(--color-primary))" stopOpacity="0.3" />
-                      <stop offset="100%" stopColor="rgb(var(--color-primary))" stopOpacity="0" />
+                    <linearGradient id="chartGradientLimit" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
+                      <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
                     </linearGradient>
                   </defs>
                   <path
-                    d="M 0 150 Q 100 120, 200 130 T 400 100 T 600 80 T 800 70"
-                    fill="url(#chartGradient)"
-                    stroke="rgb(var(--color-primary))"
+                    d="M 0 150 Q 50 140, 100 145 T 200 120 T 300 130 T 400 100 T 500 110 T 600 80 T 700 85 T 800 70"
+                    fill="url(#chartGradientLimit)"
+                    stroke="hsl(var(--primary))"
                     strokeWidth="2"
                     vectorEffect="non-scaling-stroke"
                   />
+                  {/* Price line indicator */}
+                  {currentPrice > 0 && (
+                    <line
+                      x1="0"
+                      y1={200 - (currentPrice / marketPrice) * 100}
+                      x2="800"
+                      y2={200 - (currentPrice / marketPrice) * 100}
+                      stroke="hsl(var(--secondary))"
+                      strokeWidth="1"
+                      strokeDasharray="5,5"
+                    />
+                  )}
                 </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <p className="text-sm text-muted-foreground">Live Price Chart</p>
+                <div className="absolute top-4 left-4 text-xs text-muted-foreground">
+                  High: ${(marketPrice * 1.05).toLocaleString()}
+                </div>
+                <div className="absolute bottom-4 left-4 text-xs text-muted-foreground">
+                  Low: ${(marketPrice * 0.95).toLocaleString()}
+                </div>
+                {currentPrice > 0 && (
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 bg-secondary/20 px-2 py-1 rounded text-xs text-secondary">
+                    Target: ${currentPrice.toLocaleString()}
+                  </div>
+                )}
+              </div>
+
+              {/* Order Book Preview */}
+              <div className="mt-4 grid grid-cols-2 gap-4">
+                <div className="p-3 rounded-lg bg-success/10 border border-success/20">
+                  <p className="text-xs text-muted-foreground mb-2">Bids</p>
+                  <div className="space-y-1">
+                    {[0.02, 0.04, 0.06].map((diff, i) => (
+                      <div key={i} className="flex justify-between text-xs">
+                        <span className="text-success">${(marketPrice * (1 - diff)).toLocaleString()}</span>
+                        <span className="text-muted-foreground">{(Math.random() * 10).toFixed(3)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                  <p className="text-xs text-muted-foreground mb-2">Asks</p>
+                  <div className="space-y-1">
+                    {[0.02, 0.04, 0.06].map((diff, i) => (
+                      <div key={i} className="flex justify-between text-xs">
+                        <span className="text-destructive">${(marketPrice * (1 + diff)).toLocaleString()}</span>
+                        <span className="text-muted-foreground">{(Math.random() * 10).toFixed(3)}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Order Form - All Disabled */}
-            <div className="p-6 rounded-2xl glass-strong border border-border relative">
-              {/* Coming Soon Overlay for Form */}
-              <div className="absolute inset-0 bg-background/60 backdrop-blur-sm rounded-2xl z-10 flex items-center justify-center">
-                <div className="text-center p-6">
-                  <div className="w-12 h-12 rounded-full bg-secondary/20 flex items-center justify-center mx-auto mb-3">
-                    <Clock className="h-6 w-6 text-secondary" />
-                  </div>
-                  <p className="text-sm font-medium text-foreground">Available in Mainnet</p>
-                </div>
-              </div>
-
+            {/* Order Form */}
+            <div className="p-6 rounded-2xl glass-strong border border-border">
               <Tabs value={orderType} onValueChange={(value) => setOrderType(value as "buy" | "sell")}>
-                <TabsList className="grid w-full grid-cols-2 mb-6 opacity-50">
-                  <TabsTrigger value="buy" disabled className="data-[state=active]:bg-success/20 data-[state=active]:text-success cursor-not-allowed">
-                    Buy
+                <TabsList className="grid w-full grid-cols-2 mb-6">
+                  <TabsTrigger value="buy" className="data-[state=active]:bg-success/20 data-[state=active]:text-success">
+                    Beli
                   </TabsTrigger>
-                  <TabsTrigger value="sell" disabled className="data-[state=active]:bg-destructive/20 data-[state=active]:text-destructive cursor-not-allowed">
-                    Sell
+                  <TabsTrigger value="sell" className="data-[state=active]:bg-destructive/20 data-[state=active]:text-destructive">
+                    Jual
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="buy" className="space-y-4 opacity-50">
+                <TabsContent value="buy" className="space-y-4">
                   {/* Token Selection */}
                   <div>
                     <label className="text-sm font-medium text-foreground mb-2 block">Token</label>
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild disabled>
-                        <Button variant="outline" className="w-full justify-between bg-transparent cursor-not-allowed">
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="w-full justify-between bg-transparent">
                           <div className="flex items-center gap-2">
                             <span>{selectedToken.icon}</span>
                             <span>{selectedToken.symbol}</span>
@@ -217,13 +307,25 @@ export function LimitOrder() {
                           <ChevronDown className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
+                      <DropdownMenuContent className="glass-strong border-border w-full">
+                        {tokens.filter(t => t.symbol !== "USDT" && t.symbol !== "USDC").map((token) => (
+                          <DropdownMenuItem
+                            key={token.symbol}
+                            onClick={() => setSelectedToken(token)}
+                            className="flex items-center gap-2"
+                          >
+                            <span>{token.icon}</span>
+                            <span>{token.symbol}</span>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
 
                   {/* Buy Price */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-sm font-medium text-foreground">Buy Price</label>
+                      <label className="text-sm font-medium text-foreground">Harga Beli</label>
                       <span className="text-xs text-muted-foreground">Market: ${marketPrice.toLocaleString()}</span>
                     </div>
                     <input
@@ -231,16 +333,14 @@ export function LimitOrder() {
                       value={price}
                       onChange={(e) => setPrice(e.target.value)}
                       placeholder="0.00"
-                      disabled
-                      className="w-full px-3 py-2 rounded-lg bg-surface border border-border text-foreground placeholder:text-muted-foreground focus:outline-none cursor-not-allowed"
+                      className="w-full px-3 py-2 rounded-lg bg-surface border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
                     <div className="flex gap-2 mt-2">
                       {pricePresets.map((preset) => (
                         <button
                           key={preset.label}
                           onClick={() => handlePricePreset(preset.value)}
-                          disabled
-                          className="flex-1 px-2 py-1 text-xs rounded-md bg-surface text-muted-foreground cursor-not-allowed"
+                          className="flex-1 px-2 py-1 text-xs rounded-md bg-surface text-muted-foreground hover:text-foreground hover:bg-surface/80 transition-colors"
                         >
                           {preset.label}
                         </button>
@@ -251,43 +351,60 @@ export function LimitOrder() {
                         "text-xs mt-2",
                         Number.parseFloat(priceChange) < 0 ? "text-success" : "text-muted-foreground"
                       )}>
-                        {Number.parseFloat(priceChange) < 0 ? priceChange : `+${priceChange}`}% from market
+                        {Number.parseFloat(priceChange) < 0 ? priceChange : `+${priceChange}`}% dari market
                       </p>
                     )}
                   </div>
 
                   {/* Pay With */}
                   <div>
-                    <label className="text-sm font-medium text-foreground mb-2 block">Pay with</label>
+                    <label className="text-sm font-medium text-foreground mb-2 block">Bayar dengan</label>
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild disabled>
-                        <Button variant="outline" className="w-full justify-between bg-transparent cursor-not-allowed">
-                          <span>{payToken.symbol}</span>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="w-full justify-between bg-transparent">
+                          <div className="flex items-center gap-2">
+                            <span>{payToken.icon}</span>
+                            <span>{payToken.symbol}</span>
+                          </div>
                           <ChevronDown className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
+                      <DropdownMenuContent className="glass-strong border-border">
+                        {tokens.filter(t => t.symbol === "USDT" || t.symbol === "USDC").map((token) => (
+                          <DropdownMenuItem
+                            key={token.symbol}
+                            onClick={() => setPayToken(token)}
+                            className="flex items-center gap-2"
+                          >
+                            <span>{token.icon}</span>
+                            <span>{token.symbol}</span>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
 
                   {/* Amount */}
                   <div>
-                    <label className="text-sm font-medium text-foreground mb-2 block">Amount</label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-medium text-foreground">Jumlah</label>
+                      <span className="text-xs text-muted-foreground">Saldo: 10,000 {payToken.symbol}</span>
+                    </div>
                     <input
                       type="number"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                       placeholder="0.00"
-                      disabled
-                      className="w-full px-3 py-2 rounded-lg bg-surface border border-border text-foreground placeholder:text-muted-foreground focus:outline-none cursor-not-allowed"
+                      className="w-full px-3 py-2 rounded-lg bg-surface border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
                     <div className="flex gap-2 mt-2">
-                      {["25%", "50%", "75%", "100%"].map((percent) => (
+                      {[25, 50, 75, 100].map((percent) => (
                         <button
                           key={percent}
-                          disabled
-                          className="flex-1 px-2 py-1 text-xs rounded-md bg-surface text-muted-foreground cursor-not-allowed"
+                          onClick={() => handleAmountPreset(percent)}
+                          className="flex-1 px-2 py-1 text-xs rounded-md bg-surface text-muted-foreground hover:text-foreground hover:bg-surface/80 transition-colors"
                         >
-                          {percent}
+                          {percent}%
                         </button>
                       ))}
                     </div>
@@ -295,17 +412,17 @@ export function LimitOrder() {
 
                   {/* Expiry */}
                   <div>
-                    <label className="text-sm font-medium text-foreground mb-2 block">Expires in</label>
+                    <label className="text-sm font-medium text-foreground mb-2 block">Kedaluwarsa</label>
                     <div className="grid grid-cols-3 gap-2">
-                      {expiryOptions.map((option) => (
+                      {expiryOptions.slice(0, 3).map((option) => (
                         <button
                           key={option.value}
-                          disabled
+                          onClick={() => setExpiry(option.value)}
                           className={cn(
-                            "px-3 py-2 text-xs font-medium rounded-lg cursor-not-allowed",
+                            "px-3 py-2 text-xs font-medium rounded-lg transition-colors",
                             expiry === option.value
                               ? "bg-primary/20 text-primary border border-primary"
-                              : "bg-surface text-muted-foreground border border-border"
+                              : "bg-surface text-muted-foreground border border-border hover:border-primary/50"
                           )}
                         >
                           {option.label}
@@ -314,44 +431,51 @@ export function LimitOrder() {
                     </div>
                   </div>
 
-                  {/* Receive Address */}
-                  <div>
-                    <label className="text-sm font-medium text-foreground mb-2 block">Receive address</label>
-                    <input
-                      type="text"
-                      value={receiveAddress}
-                      disabled
-                      className="w-full px-3 py-2 rounded-lg bg-surface border border-border text-foreground text-sm cursor-not-allowed"
-                    />
-                  </div>
+                  {/* Estimated Total */}
+                  {currentPrice > 0 && Number.parseFloat(amount) > 0 && (
+                    <div className="p-3 rounded-lg bg-surface/50 border border-border">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Estimasi dapat</span>
+                        <span className="font-medium text-foreground">
+                          {(Number.parseFloat(amount) / currentPrice).toFixed(6)} {selectedToken.symbol}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm mt-1">
+                        <span className="text-muted-foreground">Total bayar</span>
+                        <span className="font-medium text-foreground">
+                          {amount} {payToken.symbol}
+                        </span>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Info */}
                   <div className="p-3 rounded-lg bg-secondary/10 border border-secondary/20">
                     <div className="flex items-start gap-2">
                       <Info className="h-4 w-4 text-secondary flex-shrink-0 mt-0.5" />
                       <p className="text-xs text-foreground">
-                        Your order will be executed automatically when the market reaches your target price
+                        Order akan dieksekusi otomatis saat harga market mencapai target Anda
                       </p>
                     </div>
                   </div>
 
-                  {/* Submit Button - Disabled */}
+                  {/* Submit Button */}
                   <Button 
-                    disabled 
-                    className="w-full py-6 bg-success/50 text-success-foreground font-bold cursor-not-allowed"
+                    onClick={handleSubmitOrder}
+                    disabled={!price || !amount}
+                    className="w-full py-6 bg-success hover:bg-success/90 text-success-foreground font-bold"
                   >
-                    <Lock className="h-4 w-4 mr-2" />
-                    Coming Soon
+                    Buat Order Beli
                   </Button>
                 </TabsContent>
 
-                <TabsContent value="sell" className="space-y-4 opacity-50">
-                  {/* Similar structure for Sell - All Disabled */}
+                <TabsContent value="sell" className="space-y-4">
+                  {/* Token Selection */}
                   <div>
                     <label className="text-sm font-medium text-foreground mb-2 block">Token</label>
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild disabled>
-                        <Button variant="outline" className="w-full justify-between bg-transparent cursor-not-allowed">
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="w-full justify-between bg-transparent">
                           <div className="flex items-center gap-2">
                             <span>{selectedToken.icon}</span>
                             <span>{selectedToken.symbol}</span>
@@ -359,68 +483,114 @@ export function LimitOrder() {
                           <ChevronDown className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
+                      <DropdownMenuContent className="glass-strong border-border w-full">
+                        {tokens.filter(t => t.symbol !== "USDT" && t.symbol !== "USDC").map((token) => (
+                          <DropdownMenuItem
+                            key={token.symbol}
+                            onClick={() => setSelectedToken(token)}
+                            className="flex items-center gap-2"
+                          >
+                            <span>{token.icon}</span>
+                            <span>{token.symbol}</span>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
 
+                  {/* Sell Price */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-sm font-medium text-foreground">Sell Price</label>
+                      <label className="text-sm font-medium text-foreground">Harga Jual</label>
                       <span className="text-xs text-muted-foreground">Market: ${marketPrice.toLocaleString()}</span>
                     </div>
                     <input
                       type="number"
                       value={price}
+                      onChange={(e) => setPrice(e.target.value)}
                       placeholder="0.00"
-                      disabled
-                      className="w-full px-3 py-2 rounded-lg bg-surface border border-border text-foreground placeholder:text-muted-foreground cursor-not-allowed"
+                      className="w-full px-3 py-2 rounded-lg bg-surface border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
                     <div className="flex gap-2 mt-2">
-                      {["+5%", "+10%", "+25%", "+50%"].map((preset) => (
+                      {sellPresets.map((preset) => (
                         <button
-                          key={preset}
-                          disabled
-                          className="flex-1 px-2 py-1 text-xs rounded-md bg-surface text-muted-foreground cursor-not-allowed"
+                          key={preset.label}
+                          onClick={() => handlePricePreset(preset.value)}
+                          className="flex-1 px-2 py-1 text-xs rounded-md bg-surface text-muted-foreground hover:text-foreground hover:bg-surface/80 transition-colors"
                         >
-                          {preset}
+                          {preset.label}
                         </button>
                       ))}
                     </div>
                   </div>
 
+                  {/* Receive In */}
                   <div>
-                    <label className="text-sm font-medium text-foreground mb-2 block">Receive in</label>
+                    <label className="text-sm font-medium text-foreground mb-2 block">Terima dalam</label>
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild disabled>
-                        <Button variant="outline" className="w-full justify-between bg-transparent cursor-not-allowed">
-                          <span>{receiveToken.symbol}</span>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="w-full justify-between bg-transparent">
+                          <div className="flex items-center gap-2">
+                            <span>{receiveToken.icon}</span>
+                            <span>{receiveToken.symbol}</span>
+                          </div>
                           <ChevronDown className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
+                      <DropdownMenuContent className="glass-strong border-border">
+                        {tokens.filter(t => t.symbol === "USDT" || t.symbol === "USDC").map((token) => (
+                          <DropdownMenuItem
+                            key={token.symbol}
+                            onClick={() => setReceiveToken(token)}
+                            className="flex items-center gap-2"
+                          >
+                            <span>{token.icon}</span>
+                            <span>{token.symbol}</span>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
 
+                  {/* Amount */}
                   <div>
-                    <label className="text-sm font-medium text-foreground mb-2 block">Amount</label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-medium text-foreground">Jumlah</label>
+                      <span className="text-xs text-muted-foreground">Saldo: 5.0 {selectedToken.symbol}</span>
+                    </div>
                     <input
                       type="number"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
                       placeholder="0.00"
-                      disabled
-                      className="w-full px-3 py-2 rounded-lg bg-surface border border-border text-foreground placeholder:text-muted-foreground cursor-not-allowed"
+                      className="w-full px-3 py-2 rounded-lg bg-surface border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
+                    <div className="flex gap-2 mt-2">
+                      {[25, 50, 75, 100].map((percent) => (
+                        <button
+                          key={percent}
+                          onClick={() => setAmount((5 * percent / 100).toString())}
+                          className="flex-1 px-2 py-1 text-xs rounded-md bg-surface text-muted-foreground hover:text-foreground hover:bg-surface/80 transition-colors"
+                        >
+                          {percent}%
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
+                  {/* Expiry */}
                   <div>
-                    <label className="text-sm font-medium text-foreground mb-2 block">Expires in</label>
+                    <label className="text-sm font-medium text-foreground mb-2 block">Kedaluwarsa</label>
                     <div className="grid grid-cols-3 gap-2">
-                      {expiryOptions.map((option) => (
+                      {expiryOptions.slice(0, 3).map((option) => (
                         <button
                           key={option.value}
-                          disabled
+                          onClick={() => setExpiry(option.value)}
                           className={cn(
-                            "px-3 py-2 text-xs font-medium rounded-lg cursor-not-allowed",
+                            "px-3 py-2 text-xs font-medium rounded-lg transition-colors",
                             expiry === option.value
                               ? "bg-primary/20 text-primary border border-primary"
-                              : "bg-surface text-muted-foreground border border-border"
+                              : "bg-surface text-muted-foreground border border-border hover:border-primary/50"
                           )}
                         >
                           {option.label}
@@ -429,85 +599,194 @@ export function LimitOrder() {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="text-sm font-medium text-foreground mb-2 block">Receive address</label>
-                    <input
-                      type="text"
-                      value={receiveAddress}
-                      disabled
-                      className="w-full px-3 py-2 rounded-lg bg-surface border border-border text-foreground text-sm cursor-not-allowed"
-                    />
-                  </div>
-
-                  <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-                    <div className="flex items-start gap-2">
-                      <Info className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
-                      <p className="text-xs text-foreground">
-                        Your tokens will be sold automatically when the market reaches your target price
-                      </p>
+                  {/* Estimated Total */}
+                  {currentPrice > 0 && Number.parseFloat(amount) > 0 && (
+                    <div className="p-3 rounded-lg bg-surface/50 border border-border">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Estimasi dapat</span>
+                        <span className="font-medium text-foreground">
+                          {(Number.parseFloat(amount) * currentPrice).toLocaleString()} {receiveToken.symbol}
+                        </span>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
+                  {/* Submit Button */}
                   <Button 
-                    disabled 
-                    className="w-full py-6 bg-destructive/50 text-destructive-foreground font-bold cursor-not-allowed"
+                    onClick={handleSubmitOrder}
+                    disabled={!price || !amount}
+                    className="w-full py-6 bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold"
                   >
-                    <Lock className="h-4 w-4 mr-2" />
-                    Coming Soon
+                    Buat Order Jual
                   </Button>
                 </TabsContent>
               </Tabs>
             </div>
           </div>
 
-          {/* Open Orders Section - Display Only */}
-          <div className="mt-8 p-6 rounded-2xl glass-strong border border-border">
-            <h3 className="text-lg font-bold text-foreground mb-4">Open Orders</h3>
-            <div className="text-center py-12">
-              <div className="w-16 h-16 rounded-full bg-muted/20 flex items-center justify-center mx-auto mb-4">
-                <Clock className="h-8 w-8 text-muted-foreground" />
+          {/* Active Orders */}
+          {orders.length > 0 && (
+            <div className="mt-8 p-6 rounded-2xl glass-strong border border-border">
+              <h3 className="text-lg font-bold text-foreground mb-4">Order Aktif</h3>
+              <div className="space-y-3">
+                {orders.map((order) => (
+                  <div key={order.id} className="flex items-center justify-between p-4 rounded-xl bg-surface/50 border border-border">
+                    <div className="flex items-center gap-4">
+                      <div className={cn(
+                        "px-3 py-1 rounded-full text-xs font-medium",
+                        order.type === "buy" ? "bg-success/20 text-success" : "bg-destructive/20 text-destructive"
+                      )}>
+                        {order.type === "buy" ? "BELI" : "JUAL"}
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">{order.amount} {order.token}</p>
+                        <p className="text-xs text-muted-foreground">@ ${Number(order.price).toLocaleString()}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground">{order.createdAt}</p>
+                        <p className="text-xs text-muted-foreground">Exp: {expiryOptions.find(e => e.value === order.expiry)?.label}</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => cancelOrder(order.id)}
+                        className="text-muted-foreground hover:text-destructive"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <p className="text-muted-foreground">No open orders</p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Limit orders will appear here once available
-              </p>
             </div>
-          </div>
+          )}
         </div>
       </section>
 
       {/* Full Chart Modal */}
       <Dialog open={chartModalOpen} onOpenChange={setChartModalOpen}>
-        <DialogContent className="glass-strong border-border max-w-4xl">
+        <DialogContent className="max-w-4xl glass-strong border-border">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <span className="text-2xl">{selectedToken.icon}</span>
-              {selectedToken.symbol}/USD Chart
+              <span className="text-xl">{selectedToken.icon}</span>
+              {selectedToken.symbol}/USD
             </DialogTitle>
           </DialogHeader>
           <div className="h-96 rounded-xl bg-surface/30 relative overflow-hidden">
             <svg className="w-full h-full" viewBox="0 0 800 300" preserveAspectRatio="none">
               <defs>
-                <linearGradient id="fullChartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="rgb(var(--color-primary))" stopOpacity="0.3" />
-                  <stop offset="100%" stopColor="rgb(var(--color-primary))" stopOpacity="0" />
+                <linearGradient id="chartGradientFull" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
+                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
                 </linearGradient>
               </defs>
               <path
-                d="M 0 250 Q 50 230, 100 240 T 200 200 T 300 180 T 400 150 T 500 130 T 600 100 T 700 80 T 800 70"
-                fill="url(#fullChartGradient)"
-                stroke="rgb(var(--color-primary))"
+                d="M 0 250 Q 50 230, 100 240 T 200 200 T 300 220 T 400 150 T 500 170 T 600 120 T 700 130 T 800 100"
+                fill="url(#chartGradientFull)"
+                stroke="hsl(var(--primary))"
                 strokeWidth="2"
                 vectorEffect="non-scaling-stroke"
               />
             </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <Lock className="h-8 w-8 text-secondary mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">Full chart available in mainnet</p>
-              </div>
-            </div>
           </div>
+          <div className="flex justify-center gap-2">
+            {["1H", "24H", "7D", "30D", "1Y"].map((period) => (
+              <button
+                key={period}
+                onClick={() => setChartPeriod(period)}
+                className={cn(
+                  "px-4 py-2 text-sm font-medium rounded-lg transition-colors",
+                  chartPeriod === period
+                    ? "bg-primary/20 text-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-surface"
+                )}
+              >
+                {period}
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm Order Dialog */}
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent className="max-w-md glass-strong border-border">
+          <DialogHeader>
+            <DialogTitle>Konfirmasi Order</DialogTitle>
+          </DialogHeader>
+          
+          {submitSuccess ? (
+            <div className="py-8 text-center">
+              <div className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center mx-auto mb-4">
+                <Check className="h-8 w-8 text-success" />
+              </div>
+              <p className="text-lg font-medium text-foreground">Order Berhasil Dibuat!</p>
+              <p className="text-sm text-muted-foreground mt-2">Order Anda akan dieksekusi saat harga tercapai</p>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-4 py-4">
+                <div className="p-4 rounded-xl bg-surface/50 border border-border">
+                  <div className="flex justify-between mb-2">
+                    <span className="text-muted-foreground">Tipe</span>
+                    <span className={cn(
+                      "font-medium",
+                      orderType === "buy" ? "text-success" : "text-destructive"
+                    )}>
+                      {orderType === "buy" ? "Beli" : "Jual"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-muted-foreground">Token</span>
+                    <span className="font-medium text-foreground">{selectedToken.symbol}</span>
+                  </div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-muted-foreground">Harga Target</span>
+                    <span className="font-medium text-foreground">${currentPrice.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-muted-foreground">Jumlah</span>
+                    <span className="font-medium text-foreground">{amount} {orderType === "buy" ? payToken.symbol : selectedToken.symbol}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Kedaluwarsa</span>
+                    <span className="font-medium text-foreground">{expiryOptions.find(e => e.value === expiry)?.label}</span>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-lg bg-secondary/10 border border-secondary/20">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-secondary flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-foreground">
+                      Order ini bersifat testnet dan tidak menggunakan dana riil
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowConfirmDialog(false)}
+                  className="flex-1"
+                >
+                  Batal
+                </Button>
+                <Button
+                  onClick={confirmOrder}
+                  disabled={isSubmitting}
+                  className={cn(
+                    "flex-1",
+                    orderType === "buy" ? "bg-success hover:bg-success/90" : "bg-destructive hover:bg-destructive/90"
+                  )}
+                >
+                  {isSubmitting ? "Memproses..." : "Konfirmasi"}
+                </Button>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </>
