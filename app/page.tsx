@@ -5,6 +5,8 @@ import { EnhancedNavigation } from "@/components/enhanced-navigation"
 import { QuickStatsSidebar } from "@/components/quick-stats-sidebar"
 import { FeaturedCards } from "@/components/featured-cards"
 import { TradingInterface } from "@/components/trading-interface"
+import { LimitOrder } from "@/components/limit-order"
+import { StakeEarn } from "@/components/stake-earn"
 import { PortfolioDashboard } from "@/components/portfolio-dashboard"
 import { Leaderboard } from "@/components/leaderboard"
 import { RewardsHub } from "@/components/rewards-hub"
@@ -13,7 +15,7 @@ import { ParticleBackground } from "@/components/particle-background"
 
 export default function ZkCarelApp() {
   return (
-    <ThemeProvider defaultTheme="dark" defaultMode="private">
+    <ThemeProvider defaultTheme="dark">
       <div className="relative min-h-screen">
         {/* Background Effects */}
         <ParticleBackground />
@@ -46,6 +48,12 @@ export default function ZkCarelApp() {
               <section id="trade">
                 <TradingInterface />
               </section>
+
+              {/* Limit Order - Coming Soon */}
+              <LimitOrder />
+
+              {/* Stake & Earn - Coming Soon */}
+              <StakeEarn />
 
               {/* Portfolio Dashboard */}
               <PortfolioDashboard />

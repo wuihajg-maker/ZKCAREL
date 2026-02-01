@@ -3,7 +3,6 @@
 import * as React from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { useTheme } from "@/components/theme-provider"
 import { useWallet, type WalletProvider } from "@/hooks/use-wallet"
 import { useNotifications } from "@/hooks/use-notifications"
 import { Button } from "@/components/ui/button"
@@ -22,11 +21,12 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
-  Shield, Wallet, Bell, User, Menu, X, ArrowRightLeft, PieChart, Trophy, Gift, Bot, 
-  History, Users, Settings, Droplets, CreditCard, ChevronDown, HelpCircle, Zap,
-  Copy, Check, ExternalLink, TrendingUp, Coins, DollarSign, QrCode, Building2,
-  Smartphone, ChevronRight, Clock, XCircle, CheckCircle, Loader2
+  Shield, Wallet, Bell, User, Menu, X, ArrowRightLeft, PieChart, Trophy, Gift, 
+  History, Users, Settings, Droplets, ChevronDown, HelpCircle, Zap,
+  Copy, Check, ExternalLink, TrendingUp, Coins, QrCode, Lock,
+  Smartphone, ChevronRight, Clock, XCircle, CheckCircle, Loader2, Mail
 } from "lucide-react"
 
 const walletProviders: { id: WalletProvider; name: string; icon: string }[] = [
@@ -44,8 +44,24 @@ const faucetTokens = [
   { symbol: "CAREL", name: "ZkCarel", amount: "100" },
 ]
 
+// Transaction history filter options (Indonesian)
+const txFilters = [
+  { id: "all", label: "Semua" },
+  { id: "pending", label: "Berlangsung" },
+  { id: "completed", label: "Selesai" },
+  { id: "failed", label: "Gagal" },
+]
+
+// Top Up providers
+const topUpProviders = [
+  { id: "qris", name: "QRIS", icon: "📱", available: false },
+  { id: "dana", name: "Dana", icon: "💙", available: false },
+  { id: "ovo", name: "OVO", icon: "💜", available: false },
+  { id: "gopay", name: "GoPay", icon: "💚", available: false },
+  { id: "bank", name: "Bank Transfer", icon: "🏦", available: false },
+]
+
 export function EnhancedNavigation() {
-  const { mode, toggleMode } = useTheme()
   const wallet = useWallet()
   const notifications = useNotifications()
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
@@ -53,8 +69,10 @@ export function EnhancedNavigation() {
   const [notificationsOpen, setNotificationsOpen] = React.useState(false)
   const [txHistoryOpen, setTxHistoryOpen] = React.useState(false)
   const [helpOpen, setHelpOpen] = React.useState(false)
+  const [topUpOpen, setTopUpOpen] = React.useState(false)
   const [claimedFaucet, setClaimedFaucet] = React.useState<string[]>([])
   const [copiedAddress, setCopiedAddress] = React.useState(false)
+  const [txFilter, setTxFilter] = React.useState("all")
 
   const handleWalletConnect = async (provider: WalletProvider) => {
     await wallet.connect(provider)
@@ -90,6 +108,12 @@ export function EnhancedNavigation() {
     { id: '3', type: 'stake', status: 'completed', from: 'USDT', to: 'sUSDT', amount: '1000', value: '$1,000', time: '1 day ago' },
     { id: '4', type: 'swap', status: 'failed', from: 'STRK', to: 'ETH', amount: '500', value: '$250', time: '2 days ago' },
   ]
+
+  // Filter transactions
+  const filteredTxHistory = txHistory.filter(tx => {
+    if (txFilter === "all") return true
+    return tx.status === txFilter
+  })
 
   return (
     <>
@@ -397,7 +421,7 @@ export function EnhancedNavigation() {
                       <TrendingUp className="h-4 w-4" />
                       Limit Order
                     </div>
-                    <ChevronRight className="h-4 w-4" />
+                    <span className="text-xs text-secondary">Soon</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
@@ -406,34 +430,28 @@ export function EnhancedNavigation() {
                       <Coins className="h-4 w-4" />
                       Stake & Earn
                     </div>
-                    <ChevronRight className="h-4 w-4" />
+                    <span className="text-xs text-secondary">Soon</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel>Top Up</DropdownMenuLabel>
-                <DropdownMenuItem asChild>
-                  <Link href="#receive" className="flex items-center gap-2">
-                    <QrCode className="h-4 w-4" />
-                    Receive Crypto
-                  </Link>
+                <DropdownMenuItem onClick={() => setTopUpOpen(true)}>
+                  <QrCode className="h-4 w-4 mr-2" />
+                  Receive Crypto
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="#topup-local" className="flex items-center gap-2">
+                <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed">
+                  <div className="flex items-center gap-2">
                     <Smartphone className="h-4 w-4" />
-                    Local Currency
-                  </Link>
+                    Buy with Fiat
+                  </div>
+                  <span className="ml-auto text-xs text-secondary">Soon</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="#topup-cex" className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4" />
-                    Top Up CEX
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="#p2p" className="flex items-center gap-2">
+                <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed">
+                  <div className="flex items-center gap-2">
                     <Users className="h-4 w-4" />
-                    P2P
-                  </Link>
+                    Sell Crypto
+                  </div>
+                  <span className="ml-auto text-xs text-secondary">Soon</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => setHelpOpen(true)}>
@@ -446,23 +464,6 @@ export function EnhancedNavigation() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-
-            {/* Mode Toggle */}
-            <button
-              onClick={toggleMode}
-              className={cn(
-                "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all",
-                mode === "private"
-                  ? "bg-primary/20 text-primary border border-primary/50"
-                  : "bg-secondary/20 text-secondary border border-secondary/50"
-              )}
-            >
-              <span className={cn(
-                "h-2 w-2 rounded-full",
-                mode === "private" ? "bg-primary" : "bg-secondary"
-              )} />
-              {mode === "private" ? "Private" : "Transparent"}
-            </button>
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -538,39 +539,143 @@ export function EnhancedNavigation() {
         </DialogContent>
       </Dialog>
 
-      {/* Transaction History Dialog */}
+      {/* Transaction History Dialog with Filters */}
       <Dialog open={txHistoryOpen} onOpenChange={setTxHistoryOpen}>
         <DialogContent className="glass-strong border-border max-w-2xl">
           <DialogHeader>
             <DialogTitle>Transaction History</DialogTitle>
             <DialogDescription>View all your recent transactions</DialogDescription>
           </DialogHeader>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {txHistory.map((tx) => (
-              <div key={tx.id} className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-surface/50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center",
-                    tx.status === 'completed' && "bg-success/20",
-                    tx.status === 'pending' && "bg-secondary/20",
-                    tx.status === 'failed' && "bg-destructive/20"
-                  )}>
-                    {tx.status === 'completed' && <CheckCircle className="h-5 w-5 text-success" />}
-                    {tx.status === 'pending' && <Loader2 className="h-5 w-5 text-secondary animate-spin" />}
-                    {tx.status === 'failed' && <XCircle className="h-5 w-5 text-destructive" />}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium capitalize">{tx.type} {tx.from} → {tx.to}</p>
-                    <p className="text-xs text-muted-foreground">{tx.time}</p>
-                  </div>
+          
+          {/* Filter Tabs */}
+          <Tabs value={txFilter} onValueChange={setTxFilter} className="w-full">
+            <TabsList className="grid w-full grid-cols-4 mb-4">
+              {txFilters.map(filter => (
+                <TabsTrigger key={filter.id} value={filter.id} className="text-xs">
+                  {filter.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            
+            <TabsContent value={txFilter} className="space-y-2 max-h-96 overflow-y-auto">
+              {filteredTxHistory.length === 0 ? (
+                <div className="text-center py-8">
+                  <Clock className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
+                  <p className="text-sm text-muted-foreground">No transactions found</p>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium">{tx.value}</p>
-                  <p className="text-xs text-muted-foreground">{tx.amount} {tx.from}</p>
+              ) : (
+                filteredTxHistory.map((tx) => (
+                  <div key={tx.id} className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-surface/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        "w-10 h-10 rounded-full flex items-center justify-center",
+                        tx.status === 'completed' && "bg-success/20",
+                        tx.status === 'pending' && "bg-secondary/20",
+                        tx.status === 'failed' && "bg-destructive/20"
+                      )}>
+                        {tx.status === 'completed' && <CheckCircle className="h-5 w-5 text-success" />}
+                        {tx.status === 'pending' && <Loader2 className="h-5 w-5 text-secondary animate-spin" />}
+                        {tx.status === 'failed' && <XCircle className="h-5 w-5 text-destructive" />}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium capitalize">{tx.type} {tx.from} → {tx.to}</p>
+                        <p className="text-xs text-muted-foreground">{tx.time}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium">{tx.value}</p>
+                      <p className="text-xs text-muted-foreground">{tx.amount} {tx.from}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
+
+      {/* Top Up Dialog */}
+      <Dialog open={topUpOpen} onOpenChange={setTopUpOpen}>
+        <DialogContent className="glass-strong border-border max-w-md">
+          <DialogHeader>
+            <DialogTitle>Top Up / Receive Crypto</DialogTitle>
+            <DialogDescription>Add funds to your wallet</DialogDescription>
+          </DialogHeader>
+          
+          <Tabs defaultValue="receive" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="receive">Receive</TabsTrigger>
+              <TabsTrigger value="buy" disabled className="opacity-50">Buy</TabsTrigger>
+              <TabsTrigger value="sell" disabled className="opacity-50">Sell</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="receive" className="space-y-4 pt-4">
+              {/* QR Code Placeholder */}
+              <div className="flex flex-col items-center p-6 rounded-xl bg-surface/50 border border-border">
+                <div className="w-48 h-48 bg-background rounded-xl flex items-center justify-center border-2 border-dashed border-border mb-4">
+                  <QrCode className="h-24 w-24 text-muted-foreground" />
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">Your Wallet Address</p>
+                <div className="flex items-center gap-2">
+                  <code className="text-sm font-mono text-foreground bg-surface px-3 py-1.5 rounded">
+                    {wallet.isConnected ? wallet.address : "Connect wallet first"}
+                  </code>
+                  {wallet.isConnected && (
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={copyAddress}>
+                      {copiedAddress ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  )}
                 </div>
               </div>
-            ))}
-          </div>
+              
+              {/* CEX Deposit Info */}
+              <div className="p-4 rounded-lg bg-secondary/10 border border-secondary/20">
+                <div className="flex items-start gap-3">
+                  <Lock className="h-5 w-5 text-secondary flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">CEX Deposit - Coming Soon</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Direct deposit from centralized exchanges will be available in mainnet.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="buy" className="space-y-4 pt-4">
+              <div className="p-8 rounded-xl bg-surface/30 border border-border text-center">
+                <Lock className="h-12 w-12 text-secondary mx-auto mb-4" />
+                <h4 className="font-medium text-foreground mb-2">Available in Mainnet</h4>
+                <p className="text-sm text-muted-foreground">
+                  Buy crypto with fiat currencies will be available after mainnet launch.
+                </p>
+                
+                {/* Disabled Provider List */}
+                <div className="mt-6 space-y-2">
+                  {topUpProviders.map(provider => (
+                    <div 
+                      key={provider.id}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-surface/50 border border-border opacity-50"
+                    >
+                      <span className="text-xl">{provider.icon}</span>
+                      <span className="text-sm text-foreground">{provider.name}</span>
+                      <span className="ml-auto text-xs text-secondary">Coming Soon</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="sell" className="space-y-4 pt-4">
+              <div className="p-8 rounded-xl bg-surface/30 border border-border text-center">
+                <Lock className="h-12 w-12 text-secondary mx-auto mb-4" />
+                <h4 className="font-medium text-foreground mb-2">Available in Mainnet</h4>
+                <p className="text-sm text-muted-foreground">
+                  Sell crypto for fiat currencies will be available after mainnet launch.
+                </p>
+              </div>
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
 
@@ -582,22 +687,36 @@ export function EnhancedNavigation() {
             <DialogDescription>Get help with ZkCarel platform</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <Link href="#tutorial-swap" className="p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-surface/50 transition-all">
+              <h4 className="font-medium text-foreground mb-1">How to Swap</h4>
+              <p className="text-sm text-muted-foreground">Learn how to swap tokens on ZkCarel</p>
+            </Link>
+            <Link href="#tutorial-bridge" className="p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-surface/50 transition-all">
+              <h4 className="font-medium text-foreground mb-1">How to Bridge</h4>
+              <p className="text-sm text-muted-foreground">Transfer assets across different networks</p>
+            </Link>
+            <div className="p-4 rounded-lg border border-border bg-surface/30">
+              <div className="flex items-center gap-2 mb-1">
+                <h4 className="font-medium text-foreground">How to Use Limit Order</h4>
+                <span className="text-xs bg-secondary/20 text-secondary px-2 py-0.5 rounded">Coming Soon</span>
+              </div>
+              <p className="text-sm text-muted-foreground">Set automatic trades at your target price</p>
+            </div>
             <Link href="#tutorial-wallet" className="p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-surface/50 transition-all">
               <h4 className="font-medium text-foreground mb-1">Connect Wallet Tutorial</h4>
               <p className="text-sm text-muted-foreground">Learn how to connect various wallets</p>
             </Link>
-            <Link href="#tutorial-swap" className="p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-surface/50 transition-all">
-              <h4 className="font-medium text-foreground mb-1">First Swap Guide</h4>
-              <p className="text-sm text-muted-foreground">Complete your first token swap</p>
-            </Link>
-            <Link href="#tutorial-points" className="p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-surface/50 transition-all">
-              <h4 className="font-medium text-foreground mb-1">Points & Tier System</h4>
-              <p className="text-sm text-muted-foreground">Understand the royalty hub</p>
-            </Link>
-            <Link href="#tutorial-referral" className="p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-surface/50 transition-all">
-              <h4 className="font-medium text-foreground mb-1">Referral Program</h4>
-              <p className="text-sm text-muted-foreground">Invite friends and earn rewards</p>
-            </Link>
+            
+            {/* Contact Support */}
+            <div className="mt-4 p-4 rounded-lg bg-primary/10 border border-primary/20">
+              <h4 className="font-medium text-foreground mb-2">Contact Support</h4>
+              <div className="flex items-center gap-2">
+                <Mail className="h-4 w-4 text-primary" />
+                <a href="mailto:support@zkcarel.com" className="text-sm text-primary hover:underline">
+                  support@zkcarel.com
+                </a>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
