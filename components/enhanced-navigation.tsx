@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { useWallet, type WalletProvider } from "@/hooks/use-wallet"
+import { useWallet, type WalletProviderType } from "@/hooks/use-wallet"
 import { useNotifications } from "@/hooks/use-notifications"
 import { Button } from "@/components/ui/button"
 import {
@@ -29,7 +29,7 @@ import {
   Smartphone, ChevronRight, Clock, XCircle, CheckCircle, Loader2, Mail
 } from "lucide-react"
 
-const walletProviders: { id: WalletProvider; name: string; icon: string }[] = [
+const walletProviders: { id: WalletProviderType; name: string; icon: string }[] = [
   { id: 'metamask', name: 'MetaMask', icon: '🦊' },
   { id: 'okx', name: 'OKX Wallet', icon: '⭕' },
   { id: 'walletconnect', name: 'WalletConnect', icon: '🔗' },

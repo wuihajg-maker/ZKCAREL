@@ -2,12 +2,12 @@
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react"
 
-export type WalletProvider = "metamask" | "walletconnect" | "coinbase" | "phantom"
+export type WalletProviderType = "metamask" | "walletconnect" | "coinbase" | "phantom" | "okx" | "trust"
 
 interface WalletState {
   isConnected: boolean
   address: string | null
-  provider: WalletProvider | null
+  provider: WalletProviderType | null
   balance: {
     eth: number
     usdt: number
@@ -17,7 +17,7 @@ interface WalletState {
 }
 
 interface WalletContextType extends WalletState {
-  connect: (provider: WalletProvider) => Promise<void>
+  connect: (provider: WalletProviderType) => Promise<void>
   disconnect: () => void
   switchNetwork: (network: string) => Promise<void>
 }
@@ -37,7 +37,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     network: "ethereum",
   })
 
-  const connect = useCallback(async (provider: WalletProvider) => {
+  const connect = useCallback(async (provider: WalletProviderType) => {
     // Simulate wallet connection
     await new Promise((resolve) => setTimeout(resolve, 1000))
     
