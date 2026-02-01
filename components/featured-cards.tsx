@@ -7,13 +7,20 @@ import { ArrowRightLeft, TrendingUp, Coins, Sparkles, ChevronLeft, ChevronRight,
 import { Button } from "@/components/ui/button"
 import { ReferralLog } from "@/components/referral-log"
 
-// Animated counter for dynamic stats
+// Animated counter for dynamic stats - starts at 0 on server, animates on client
 function useAnimatedValue(end: number, duration: number = 1500) {
   const [value, setValue] = React.useState(0)
   const [hasAnimated, setHasAnimated] = React.useState(false)
+  const [mounted, setMounted] = React.useState(false)
   const ref = React.useRef<HTMLDivElement>(null)
 
   React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  React.useEffect(() => {
+    if (!mounted) return
+    
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !hasAnimated) {
@@ -42,7 +49,7 @@ function useAnimatedValue(end: number, duration: number = 1500) {
     }
 
     return () => observer.disconnect()
-  }, [end, duration, hasAnimated])
+  }, [end, duration, hasAnimated, mounted])
 
   return { value, ref }
 }
@@ -255,16 +262,16 @@ function FeatureCard({
     }
   }
 
-  const CardWrapper = feature.isReferral ? 'button' : Link
+  const CardWrapper = feature.isReferral ? 'div' : Link
   const cardProps = feature.isReferral 
-    ? { onClick: handleClick, type: 'button' as const }
+    ? { onClick: handleClick, role: 'button', tabIndex: 0 }
     : { href: feature.href }
 
   return (
     <CardWrapper
       {...cardProps}
       className={cn(
-        "group flex-shrink-0 w-[350px] snap-start text-left",
+        "group flex-shrink-0 w-[350px] snap-start text-left cursor-pointer",
         feature.comingSoon && "cursor-default"
       )}
     >

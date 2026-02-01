@@ -15,11 +15,18 @@ import {
   Lock
 } from "lucide-react"
 
-// Animated counter hook
+// Animated counter hook - starts at 0 on server, animates on client mount
 function useAnimatedCounter(end: number, duration: number = 2000) {
   const [count, setCount] = React.useState(0)
+  const [mounted, setMounted] = React.useState(false)
   
   React.useEffect(() => {
+    setMounted(true)
+  }, [])
+  
+  React.useEffect(() => {
+    if (!mounted) return
+    
     let startTime: number | null = null
     let animationFrame: number
     
@@ -38,7 +45,7 @@ function useAnimatedCounter(end: number, duration: number = 2000) {
     
     animationFrame = requestAnimationFrame(animate)
     return () => cancelAnimationFrame(animationFrame)
-  }, [end, duration])
+  }, [end, duration, mounted])
   
   return count
 }
