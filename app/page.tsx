@@ -1,6 +1,8 @@
 "use client"
 
 import { ThemeProvider } from "@/components/theme-provider"
+import { WalletProvider } from "@/hooks/use-wallet"
+import { NotificationsProvider } from "@/hooks/use-notifications"
 import { EnhancedNavigation } from "@/components/enhanced-navigation"
 import { QuickStatsSidebar } from "@/components/quick-stats-sidebar"
 import { FeaturedCards } from "@/components/featured-cards"
@@ -16,7 +18,9 @@ import { ParticleBackground } from "@/components/particle-background"
 export default function ZkCarelApp() {
   return (
     <ThemeProvider defaultTheme="dark">
-      <div className="relative min-h-screen">
+      <WalletProvider>
+        <NotificationsProvider>
+          <div className="relative min-h-screen">
         {/* Background Effects */}
         <ParticleBackground />
         
@@ -93,8 +97,10 @@ export default function ZkCarelApp() {
         </div>
 
         {/* Floating AI Assistant */}
-        <FloatingAIAssistant />
-      </div>
+            <FloatingAIAssistant />
+          </div>
+        </NotificationsProvider>
+      </WalletProvider>
     </ThemeProvider>
   )
 }
